@@ -1,0 +1,98 @@
+buildscript {
+    ext.kotlin_version = '1.0.0-beta-4583'
+    ext.dokka_version = '0.9.4'
+
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:$dokka_version"
+    }
+}
+
+plugins {
+    id 'com.jfrog.bintray' version '1.4'
+}
+
+apply plugin: 'kotlin'
+apply plugin: 'maven-publish'
+apply plugin: 'org.jetbrains.dokka'
+apply plugin: 'signing'
+
+def GROUP_ID = 'io.github.importre'
+def VERSION = '0.1.0'
+def ARTIFACT = 'khtml'
+def GITHUB_URL = 'https://github.com/importre/khtml'
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar/*, dependsOn: 'dokka'*/) {
+    classifier = 'javadoc'
+//    from 'build/dokka'
+}
+
+artifacts {
+    archives sourcesJar, javadocJar
+}
+
+publishing {
+    publications {
+        KhtmlPublish(MavenPublication) {
+            from components.java
+            groupId GROUP_ID
+            artifactId ARTIFACT
+            version VERSION
+
+            artifact sourcesJar
+            artifact javadocJar
+        }
+    }
+}
+
+bintray {
+    user = project.hasProperty("user") ? project.user : ""
+    key = project.hasProperty("key") ? project.key : ""
+    publications = ['KhtmlPublish']
+    publish = true
+    //dryRun = true
+
+    pkg {
+        repo = 'maven'
+        name = ARTIFACT
+        licenses = ['Apache-2.0']
+        vcsUrl = "${GITHUB_URL}.git"
+        publicDownloadNumbers = true
+
+        version {
+            name = VERSION
+            vcsTag = VERSION
+            gpg {
+                sign = true
+                passphrase = project.hasProperty("passphrase") ? project.passphrase : ""
+            }
+        }
+    }
+}
+
+group GROUP_ID
+version VERSION
+
+sourceSets {
+    main.java.srcDirs += 'src/main/kotlin'
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+    testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+    testCompile 'junit:junit:4.12'
+}
